@@ -21,3 +21,9 @@ python Databusters26_FINAL_Code.py
 ```
 
 Output figures are saved to `./figures/`
+
+## Analysis Modules
+
+- `databusters_analysis.py` - Core run dynamics comparison
+- `databusters_advanced_analysis.py` - Death spiral mechanism visualizations
+- `databusters_onchain_forensics.py` - Panic index and whale behavior analysis
