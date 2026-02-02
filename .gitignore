@@ -3,6 +3,9 @@ ERC20-stablecoins-001/token_transfers*.csv
 ERC20-stablecoins-001/*.zip
 gfc data/*.pdf
 
+# Case prompt PDFs (large files)
+*.pdf
+
 # Python
 __pycache__/
 *.py[cod]
