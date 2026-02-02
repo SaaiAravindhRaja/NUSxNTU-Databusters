@@ -57,6 +57,10 @@ plt.rcParams.update({
     'figure.facecolor': 'white'
 })
 
+OUTPUT_DIR = 'figures'
+DATA_DIR = 'ERC20-stablecoins-001'
+GFC_DIR = 'gfc data'
+
 COLORS = {
     'ustc': '#E74C3C', 'usdc': '#3498DB', 'usdt': '#2ECC71',
     'dai': '#9B59B6', 'wluna': '#E67E22', 'vix': '#C0392B',
