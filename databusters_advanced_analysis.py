@@ -6,6 +6,7 @@ Novel Visualizations and Deeper Economic Insights
 ================================================================================
 """
 
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,8 +37,8 @@ COLORS = {
     'sp500': '#1ABC9C', 'treasury': '#16A085', 'vix': '#C0392B'
 }
 
-import os
-os.makedirs('figures', exist_ok=True)
+OUTPUT_DIR = 'figures'
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 print("="*80)
 print("ADVANCED ANALYSIS - NOVEL VISUALIZATIONS")
