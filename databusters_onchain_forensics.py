@@ -38,6 +38,9 @@ CONTRACT_MAP = {
     '0x8e870d67f660d95d5be530380d0ec0bd388289e1': 'PAX',
 }
 
+CHUNK_SIZE = 200000
+MAX_ROWS = 2000000
+
 print("="*80)
 print("ON-CHAIN FORENSICS: What the blockchain reveals")
 print("="*80)
@@ -46,7 +49,7 @@ print("="*80)
 print("\n[1/5] Loading on-chain transaction data...")
 chunks = []
 for chunk in pd.read_csv('ERC20-stablecoins-001/token_transfers.csv',
-                         chunksize=200000, nrows=2000000):
+                         chunksize=CHUNK_SIZE, nrows=MAX_ROWS):
     chunk['datetime'] = pd.to_datetime(chunk['time_stamp'], unit='s')
     chunk['token'] = chunk['contract_address'].map(CONTRACT_MAP)
     chunk['date'] = chunk['datetime'].dt.date
