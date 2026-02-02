@@ -12,6 +12,7 @@ Section B: Policy Recommendations
 ================================================================================
 """
 
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,6 +23,9 @@ import seaborn as sns
 from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
+
+OUTPUT_DIR = 'figures'
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Set publication-quality styling
 try:
