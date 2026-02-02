@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Databusters 2026 - Anatomy of a Run</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f5;
+            color: #2c3e50;
+        }
+
+        .slide {
+            width: 1280px;
+            height: 720px;
+            background: white;
+            margin: 20px auto;
+            padding: 50px 60px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            page-break-after: always;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(90deg, #1abc9c, #3498db, #9b59b6);
+        }
+
+        .title-slide {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, #1a5276 0%, #2c3e50 100%);
+            color: white;
+        }
+
+        .title-slide::before {
+            display: none;
+        }
+
+        .title-slide h1 {
+            font-size: 52px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .title-slide h2 {
+            font-size: 28px;
+            font-weight: 400;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .title-slide .team-info {
+            font-size: 20px;
+            opacity: 0.8;
+            margin-top: 60px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #34495e;
+            margin: 15px 0 10px 0;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #7f8c8d;
+            margin: 10px 0 8px 0;
+        }
+
+        p, li {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        ul {
+            margin-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .two-column {
+            display: flex;
+            gap: 30px;
+        }
+
+        .column {
+            flex: 1;
+        }
+
+        .highlight-box {
+            background: #e8f6f3;
+            border-left: 5px solid #1abc9c;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning-box {
+            background: #fdedec;
+            border-left: 5px solid #e74c3c;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .insight-box {
+            background: #fef9e7;
+            border-left: 5px solid #f1c40f;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .stat-box {
+            display: inline-block;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 8px;
+            text-align: center;
+        }
+
+        .stat-box.red {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .stat-box.green {
+            background: linear-gradient(135deg, #27ae60, #1e8449);
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .figure-container {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .figure-container img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .figure-caption {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        .slide-number {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            font-size: 14px;
+            color: #bdc3c7;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            left: 60px;
+            font-size: 12px;
+            color: #bdc3c7;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .comparison-table td:nth-child(2) {
+            background: #fdedec;
+        }
+
+        .comparison-table td:nth-child(3) {
+            background: #d5f5e3;
+        }
+
+        .novel-tag {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+
+        @media print {
+            .slide {
+                margin: 0;
+                box-shadow: none;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- TITLE SLIDE -->
+<div class="slide title-slide">
+    <h1>ANATOMY OF A RUN</h1>
+    <h2>Financial Run Dynamics: Terra-Luna 2022 vs Reserve Primary Fund 2008</h2>
+    <div class="team-info">
+        <p>NUS x NTU Databusters 2026</p>
+        <p>February 2026</p>
+    </div>
+</div>
+
+<!-- SLIDE 1: Executive Summary -->
+<div class="slide">
+    <h1>Executive Summary</h1>
+
+    <div class="two-column">
+        <div class="column">
+            <div class="stat-box red">
+                <span class="stat-number">$50B</span>
+                <span class="stat-label">Terra-Luna: Lost in 72 Hours</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number">$65B</span>
+                <span class="stat-label">Reserve Fund: Redeemed in Days</span>
+            </div>
+        </div>
+        <div class="column">
+            <div class="stat-box red">
+                <span class="stat-number">~0%</span>
+                <span class="stat-label">Terra Investor Recovery</span>
+            </div>
+            <div class="stat-box green">
+                <span class="stat-number">~99%</span>
+                <span class="stat-label">RPF Investor Recovery</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <h3>Core Finding</h3>
+        <p><strong>Both crises share the same fundamental cause</strong>: loss of confidence triggering self-reinforcing runs. The critical difference lies in <strong>institutional design</strong>—the presence or absence of circuit breakers, regulatory oversight, and lender-of-last-resort facilities determines whether a run is contained or catastrophic.</p>
+    </div>
+
+    <div class="highlight-box">
+        <h3>Novel Contribution <span class="novel-tag">NEW</span></h3>
+        <p>We introduce the <strong>Panic Index</strong>—a real-time on-chain metric that detected crisis acceleration <strong>6 days before</strong> the price collapse, enabling potential early intervention.</p>
+    </div>
+
+    <div class="slide-number">1</div>
+</div>
+
+<!-- SLIDE 2: Section A.1 - When the Peg Breaks (Terra) -->
+<div class="slide">
+    <h1>A.1: When the Peg Breaks — Terra-Luna 2022</h1>
+
+    <div class="figure-container">
+        <img src="figures/fig1_crisis_anatomy.png" alt="Crisis Anatomy - UST Depeg and LUNA Collapse">
+        <p class="figure-caption">Figure 1: UST depeg (Panel A) and LUNA death spiral on log scale (Panel B). May 2022.</p>
+    </div>
+
+    <div class="two-column">
+        <div class="column">
+            <h3>Timeline of Collapse</h3>
+            <table>
+                <tr><th>Date</th><th>Event</th><th>UST Price</th></tr>
+                <tr><td>May 7</td><td>Large UST selling on Anchor</td><td>$0.985</td></tr>
+                <tr><td>May 9</td><td>Initial depeg; LFG deploys BTC</td><td>$0.90</td></tr>
+                <tr><td>May 10</td><td>Arbitrage overwhelmed</td><td>$0.35</td></tr>
+                <tr><td>May 12</td><td>LUNA hyperinflates; chain halted</td><td>$0.10</td></tr>
+                <tr><td>May 13</td><td>Total system failure</td><td>$0.006</td></tr>
+            </table>
+        </div>
+        <div class="column">
+            <h3>Key Metrics</h3>
+            <div class="stat-box red">
+                <span class="stat-number">99.99%</span>
+                <span class="stat-label">LUNA Loss in 72 Hours</span>
+            </div>
+            <div class="warning-box">
+                <strong>Death Spiral Mechanism:</strong> UST redemptions mint LUNA → LUNA supply explodes → LUNA price crashes → Confidence erodes → More UST redemptions
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-number">2</div>
+</div>
+
+<!-- SLIDE 3: Section A.1 - When the Peg Breaks (GFC) -->
+<div class="slide">
+    <h1>A.1: When the Peg Breaks — GFC 2008</h1>
+
+    <div class="two-column">
+        <div class="column">
+            <h3>Crisis Indicators</h3>
+            <div class="stat-box red">
+                <span class="stat-number">80.86</span>
+                <span class="stat-label">VIX Peak (Fear Index)</span>
+            </div>
+            <div class="stat-box red">
+                <span class="stat-number">4.58%</span>
+                <span class="stat-label">TED Spread Peak</span>
+            </div>
+
+            <h3>Timeline</h3>
+            <table>
+                <tr><th>Date</th><th>Event</th></tr>
+                <tr><td>Sep 15</td><td>Lehman bankruptcy</td></tr>
+                <tr><td>Sep 16</td><td>RPF "breaks the buck" (NAV=$0.97)</td></tr>
+                <tr><td>Sep 19</td><td>Treasury MMF guarantee</td></tr>
+                <tr><td>Oct 10</td><td>TED spread peaks</td></tr>
+                <tr><td>Oct 28</td><td>TARP begins</td></tr>
+            </table>
+        </div>
+        <div class="column">
+            <div class="figure-container">
+                <img src="figures/fig4_comparative_framework.png" alt="GFC Crisis Dynamics" style="max-height: 350px;">
+                <p class="figure-caption">Figure 2: VIX and TED Spread during GFC 2008</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="highlight-box">
+        <strong>Key Difference:</strong> GFC unfolded over <strong>months</strong> with multiple intervention points (Fed, Treasury, FDIC). Terra collapsed in <strong>72 hours</strong> with zero circuit breakers.
+    </div>
+
+    <div class="slide-number">3</div>
+</div>
+
+<!-- SLIDE 4: NOVEL - Panic Index -->
+<div class="slide">
+    <h1>Novel Analysis: The Panic Index <span class="novel-tag">NEW</span></h1>
+
+    <div class="figure-container">
+        <img src="figures/fig11_panic_index.png" alt="Panic Index - Novel Real-Time Metric">
+        <p class="figure-caption">Figure 3: Panic Index combining volume z-score (40%), transaction frequency z-score (30%), and unique seller ratio (30%)</p>
+    </div>
+
+    <div class="two-column">
+        <div class="column">
+            <div class="insight-box">
+                <h3>What is the Panic Index?</h3>
+                <p>A <strong>real-time composite metric</strong> derived from on-chain data:</p>
+                <ul>
+                    <li>Volume deviation from 7-day baseline</li>
+                    <li>Transaction count anomalies</li>
+                    <li>Breadth of unique sellers (panic spread)</li>
+                </ul>
+            </div>
+        </div>
+        <div class="column">
+            <div class="stat-box red">
+                <span class="stat-number">7.59</span>
+                <span class="stat-label">Peak Panic Index (Normal &lt;2)</span>
+            </div>
+            <div class="warning-box">
+                <strong>Early Warning:</strong> Panic Index crossed critical threshold (5.0) on <strong>May 7</strong>—6 days before total collapse on May 13.
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-number">4</div>
+</div>
+
+<!-- SLIDE 5: Section A.2 - Where Does the Money Go? -->
+<div class="slide">
+    <h1>A.2: Where Does the Money Go?</h1>
+
+    <div class="two-column">
+        <div class="column">
+            <h2 style="color: #e74c3c;">Terra-Luna 2022</h2>
+            <p><strong>Flight FROM:</strong></p>
+            <ul>
+                <li>UST (algorithmic) — complete exodus</li>
+                <li>LUNA — hyperinflationary collapse</li>
+            </ul>
+            <p><strong>Flight TO:</strong></p>
+            <ul>
+                <li><strong>USDC</strong> — Circle-audited reserves</li>
+                <li><strong>USDT</strong> — largest market cap</li>
+                <li><strong>DAI</strong> — over-collateralized</li>
+                <li>Fiat exits via exchanges</li>
+            </ul>
+            <div class="warning-box">
+                <strong>Insight:</strong> Capital fled from algorithmic to <strong>asset-backed</strong> stablecoins—investors implicitly understood collateral matters.
+            </div>
+        </div>
+        <div class="column">
+            <h2 style="color: #27ae60;">GFC 2008</h2>
+            <p><strong>Flight FROM:</strong></p>
+            <ul>
+                <li>Prime MMFs — CP exposure</li>
+                <li>Financial stocks (AIG, Citi, Lehman)</li>
+            </ul>
+            <p><strong>Flight TO:</strong></p>
+            <ul>
+                <li><strong>Treasury bills</strong> — yields near 0%</li>
+                <li><strong>Government MMFs</strong> — full backing</li>
+                <li>FDIC-insured deposits</li>
+            </ul>
+            <div class="highlight-box">
+                <strong>Insight:</strong> Capital fled to <strong>government-backed</strong> assets—regulatory backstops are the ultimate safe haven.
+            </div>
+        </div>
+    </div>
+
+    <div class="insight-box">
+        <h3>Common Pattern</h3>
+        <p>In both crises, capital fled from <strong>promises of stability</strong> to <strong>actual backing</strong>—whether asset reserves (USDC) or government guarantees (Treasuries).</p>
+    </div>
+
+    <div class="slide-number">5</div>
+</div>
+
+<!-- SLIDE 6: NOVEL - Capital Flight Forensics -->
+<div class="slide">
+    <h1>Novel Analysis: Capital Flight Forensics <span class="novel-tag">NEW</span></h1>
+
+    <div class="figure-container">
+        <img src="figures/fig12_capital_flight_forensics.png" alt="On-Chain Capital Flight Tracking">
+        <p class="figure-caption">Figure 4: On-chain tracking of capital reallocation from UST to USDC/USDT during May 2022 crisis</p>
+    </div>
+
+    <div class="two-column">
+        <div class="column">
+            <div class="stat-box">
+                <span class="stat-number">$1.5M</span>
+                <span class="stat-label">Whale Threshold (99th %ile)</span>
+            </div>
+            <div class="insight-box">
+                <strong>Information Asymmetry:</strong> Whale addresses (>$1.5M) began exiting <strong>before</strong> retail, suggesting sophisticated actors had earlier crisis signals.
+            </div>
+        </div>
+        <div class="column">
+            <div class="warning-box">
+                <h3>Key Finding</h3>
+                <p>On-chain data reveals <strong>capital flight patterns invisible</strong> in traditional price data. Large holders moved to USDC/USDT hours before the steepest price declines.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-number">6</div>
+</div>
+
+<!-- SLIDE 7: NOVEL - Contagion Analysis -->
+<div class="slide">
+    <h1>Novel Analysis: Contagion Quantification <span class="novel-tag">NEW</span></h1>
+
+    <div class="figure-container">
+        <img src="figures/fig13_contagion_correlation.png" alt="Contagion Correlation Analysis">
+        <p class="figure-caption">Figure 5: Stablecoin return correlations—pre-crisis (Apr 1-May 6) vs. during crisis (May 7-15)</p>
+    </div>
+
+    <div class="two-column">
+        <div class="column">
+            <h3>Pre-Crisis (Apr 1 - May 6)</h3>
+            <div class="stat-box green">
+                <span class="stat-number">0.063</span>
+                <span class="stat-label">UST-USDC Correlation</span>
+            </div>
+            <p>Near-zero correlations indicate stablecoins traded independently during normal conditions.</p>
+        </div>
+        <div class="column">
+            <h3>During Crisis (May 7 - May 15)</h3>
+            <div class="stat-box red">
+                <span class="stat-number">0.232</span>
+                <span class="stat-label">UST-USDC Correlation</span>
+            </div>
+            <p><strong>3.7x increase</strong> in correlation—evidence of contagion spreading across stablecoin ecosystem.</p>
+        </div>
+    </div>
+
+    <div class="warning-box">
+        <strong>Implication:</strong> UST's collapse created <strong>systemic stress</strong> that briefly destabilized even collateralized stablecoins. This validates concerns about stablecoin interconnectedness.
+    </div>
+
+    <div class="slide-number">7</div>
+</div>
+
+<!-- SLIDE 8: Institutional Comparison -->
+<div class="slide">
+    <h1>Institutional Design: Why Structure Matters</h1>
+
+    <table class="comparison-table">
+        <tr>
+            <th>Feature</th>
+            <th style="background: #c0392b;">Terra-Luna (2022)</th>
+            <th style="background: #27ae60;">Reserve Primary Fund (2008)</th>
+        </tr>
+        <tr>
+            <td>Backing Mechanism</td>
+            <td>Algorithmic (LUNA arbitrage)</td>
+            <td>Asset-backed (CP, Treasuries)</td>
+        </tr>
+        <tr>
+            <td>Trading Hours</td>
+            <td>24/7 globally</td>
+            <td>US market hours only</td>
+        </tr>
+        <tr>
+            <td>Lender of Last Resort</td>
+            <td>None</td>
+            <td>Federal Reserve</td>
+        </tr>
+        <tr>
+            <td>Deposit Insurance</td>
+            <td>None</td>
+            <td>Treasury Guarantee Program</td>
+        </tr>
+        <tr>
+            <td>Circuit Breakers</td>
+            <td>None</td>
+            <td>SEC/Exchange halts</td>
+        </tr>
+        <tr>
+            <td>Regulatory Oversight</td>
+            <td>Minimal</td>
+            <td>SEC, FINRA regulated</td>
+        </tr>
+        <tr>
+            <td>Investor Recovery</td>
+            <td><strong>~0%</strong></td>
+            <td><strong>~99 cents/dollar</strong></td>
+        </tr>
+    </table>
+
+    <div class="highlight-box">
+        <strong>Conclusion:</strong> Terra failed in <strong>every dimension</strong> where traditional finance provided protection. The lesson is not that stablecoins are inherently flawed, but that <strong>institutional design determines outcomes</strong>.
+    </div>
+
+    <div class="slide-number">8</div>
+</div>
+
+<!-- SLIDE 9: Section B - Policy Recommendation -->
+<div class="slide">
+    <h1>Section B: Policy Recommendation</h1>
+
+    <h2>Proposed: Panic-Index-Triggered Circuit Breakers + Over-Collateralization</h2>
+
+    <div class="two-column">
+        <div class="column">
+            <h3>1. Real-Time Panic Index Monitoring</h3>
+            <p>On-chain oracles compute Panic Index hourly. Thresholds trigger automatic responses:</p>
+            <table>
+                <tr><th>Panic Level</th><th>Action</th></tr>
+                <tr><td>&lt;2 (Normal)</td><td>No restrictions</td></tr>
+                <tr><td>2-5 (Elevated)</td><td>Warning alerts</td></tr>
+                <tr><td>5-7 (High)</td><td>5% daily redemption cap</td></tr>
+                <tr><td>&gt;7 (Critical)</td><td>24-hour redemption halt</td></tr>
+            </table>
+        </div>
+        <div class="column">
+            <h3>2. 150% Over-Collateralization</h3>
+            <p>Reserves must exceed outstanding stablecoins by 50%, providing buffer against volatility.</p>
+
+            <div class="insight-box">
+                <h3>Why This Works</h3>
+                <p>Our Panic Index detected crisis <strong>6 days early</strong>. A circuit breaker at level 5 would have triggered on May 7—<strong>before</strong> the death spiral accelerated.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="warning-box">
+        <h3>Trade-offs Acknowledged</h3>
+        <p><strong>Cost:</strong> Over-collateralization reduces capital efficiency (150% vs 0% for pure algorithmic).</p>
+        <p><strong>Benefit:</strong> Prevents 100% loss scenarios; provides intervention window.</p>
+        <p><strong>Philosophy:</strong> Import stability mechanisms from TradFi while preserving decentralization benefits.</p>
+    </div>
+
+    <div class="slide-number">9</div>
+</div>
+
+<!-- SLIDE 10: Conclusion -->
+<div class="slide">
+    <h1>Conclusion: Lessons for Financial Stability</h1>
+
+    <div class="two-column">
+        <div class="column">
+            <h2>Key Findings</h2>
+            <ol>
+                <li><strong>Same Cause, Different Outcomes:</strong> Both crises stemmed from confidence loss, but institutional design determined severity.</li>
+                <li><strong>Speed Matters:</strong> 72-hour collapses require pre-built safeguards—human intervention cannot keep pace.</li>
+                <li><strong>Transparency is Double-Edged:</strong> Real-time data can fuel panic as easily as it builds trust.</li>
+                <li><strong>Backing Beats Algorithms:</strong> Capital flees to actual reserves, not mathematical promises.</li>
+            </ol>
+        </div>
+        <div class="column">
+            <h2>Novel Contributions</h2>
+            <div class="highlight-box">
+                <p><strong>1. Panic Index:</strong> Real-time crisis detection metric derived from on-chain data (peak: 7.59)</p>
+                <p><strong>2. Early Warning:</strong> Detected crisis 6 days before price collapse</p>
+                <p><strong>3. Contagion Quantification:</strong> UST-USDC correlation jumped 3.7x during crisis</p>
+                <p><strong>4. Capital Flight Forensics:</strong> Whales exited before retail (information asymmetry)</p>
+            </div>
+
+            <div class="insight-box">
+                <strong>Final Thought:</strong> The question is not whether crypto can be stable—it's whether we will build the institutions to make stability possible.
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-number">10</div>
+</div>
+
+<!-- REFERENCES SLIDE -->
+<div class="slide">
+    <h1>References</h1>
+
+    <ol style="font-size: 13px; line-height: 1.7;">
+        <li>Gorton, G. (1988). Banking Panics and Business Cycles. <em>Oxford Economic Papers</em>, 40(4), 751-781.</li>
+        <li>Anadu, K., Azar, P., Cipriani, M., et al. (2025). Runs and Flights to Safety: Are Stablecoins the New Money Market Funds? <em>FRB of Boston Working Paper No. SRA 23-02</em>.</li>
+        <li>Liu, J., Makarov, I., & Schoar, A. (2023). Anatomy of a Run: The Terra Luna Crash. <em>NBER Working Papers 31160</em>.</li>
+        <li>Gorton, G., & Metrick, A. (2010). Regulating the Shadow Banking System. <em>Brookings Papers on Economic Activity</em>.</li>
+        <li>Shamsi, K., Gel, Y.R., Kantarcioglu, M., & Akcora, C.G. (2022). Chartalist: Labeled Graph Datasets for UTXO and Account-based Blockchains. <em>NeurIPS 2022</em>.</li>
+    </ol>
+
+    <h2 style="margin-top: 30px;">Data Sources</h2>
+    <ul style="font-size: 13px;">
+        <li>ERC20 Stablecoin Transaction Data: Chartalist Dataset (NeurIPS 2022) — 2M+ transactions analyzed</li>
+        <li>Stablecoin Price Data: CoinGecko API</li>
+        <li>GFC Market Data: Yahoo Finance (^GSPC, ^VIX)</li>
+        <li>TED Spread & Treasury Rates: FRED (Federal Reserve Economic Data)</li>
+    </ul>
+
+    <h2 style="margin-top: 30px;">Code Availability</h2>
+    <p style="font-size: 13px;">Full reproducible Python code provided in Technical Appendix. Run: <code>python Databusters26_Code.py</code></p>
+
+    <div class="footer">
+        NUS x NTU Databusters 2026
+    </div>
+</div>
+
+</body>
+</html>
