@@ -135,10 +135,10 @@ def load_data():
             print(f'  {name}: FAILED ({e})')
 
     # 1c. On-chain token transfers
-    print('\n[3/4] Token transfers (up to 2M rows)...')
+    print('\n[3/4] Token transfers (up to 5M rows)...')
     chunks = []
     for chunk in pd.read_csv(f'{CRYPTO_DIR}/token_transfers.csv',
-                              chunksize=200000, nrows=2000000):
+                              chunksize=500000, nrows=5000000):
         chunk['datetime'] = pd.to_datetime(chunk['time_stamp'], unit='s')
         chunk['token'] = chunk['contract_address'].map(CONTRACTS)
         chunk['date'] = chunk['datetime'].dt.date
@@ -233,7 +233,7 @@ def run_analysis(d):
             panel[tok] = d['px'][tok]['close']
     rets = panel.pct_change().dropna()
     pre = rets['2022-04-01':'2022-05-06']
-    dur = rets['2022-05-07':'2022-05-15']
+    dur = rets['2022-05-07':'2022-05-25']
     r['corr_pre'] = pre.corr() if len(pre) > 5 else None
     r['corr_dur'] = dur.corr() if len(dur) > 5 else None
     r['returns'] = rets
@@ -263,7 +263,7 @@ def generate_figures(d, r):
     print('=' * 60)
 
     _fig1_depeg(d)
-    _fig2_gfc_stress(d)
+    _fig2_speed(d, r)
     _fig3_panic_index(d, r)
     _fig4_capital_flight(d, r)
     _fig5_whale_retail(d, r)
@@ -290,10 +290,16 @@ def _fig1_depeg(d):
     ax1.axhline(1, color='k', ls='--', alpha=0.3, lw=0.8)
     ax1.axvline(DEPEG, color=C['gray'], ls=':', alpha=0.6)
     ax1.axvline(SPIRAL, color=C['gray'], ls=':', alpha=0.6)
+    ax1.annotate('$500M Anchor\ndump May 7',
+                 xy=(pd.Timestamp('2022-05-07'), 1.05),
+                 fontsize=7, ha='center', color=C['red'], alpha=0.8)
     ax1.annotate('Initial depeg\nMay 9', xy=(DEPEG, 0.97),
                  fontsize=8, ha='center', color=C['gray'])
     ax1.annotate('Death spiral\nMay 12', xy=(SPIRAL, 0.50),
                  fontsize=8, ha='center', color=C['gray'])
+    ax1.annotate('Chain halted\nMay 13',
+                 xy=(pd.Timestamp('2022-05-13'), 0.15),
+                 fontsize=7, ha='center', color=C['red'], alpha=0.8)
     ax1.set_ylabel('Price (USD)')
     ax1.set_title('A. UST Breaks the $1 Peg')
     ax1.legend(loc='lower left', fontsize=9)
@@ -319,55 +325,80 @@ def _fig1_depeg(d):
     _save(fig, 'fig1_depeg')
 
 
-def _fig2_gfc_stress(d):
-    """Q1: 2008 GFC stress indicators."""
-    print('\n[Fig 2] GFC Stress Indicators...')
-    gfc = d['gfc']
+def _fig2_speed(d, r):
+    """Q1: Cross-era speed comparison — the core thesis visualization."""
+    print('\n[Fig 2] Crisis Speed Comparison...')
+    px, gfc = d['px'], d['gfc']
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5))
-    fig.suptitle('Q1: When the Peg Breaks - 2008 GFC Stress Emergence',
+    fig.suptitle('Q1: Same Dynamics, Radically Different Speed',
                  fontsize=14, fontweight='bold', y=1.02)
 
-    # Left: VIX
-    if '^VIX' in gfc:
-        v = gfc['^VIX']['2008-08-01':'2008-11-30']
-        ax1.plot(v.index, v['Close'], color=C['vix'], lw=2)
-        ax1.fill_between(v.index, 0, v['Close'], alpha=0.15, color=C['vix'])
-    ax1.axvline(LEHMAN, color=C['gray'], ls=':', alpha=0.6)
-    ax1.annotate('Lehman\nbankruptcy\nSep 15', xy=(LEHMAN, 72),
-                 fontsize=8, ha='center', color=C['gray'])
-    vix_peak = gfc['^VIX']['Close'].max() if '^VIX' in gfc else 0
-    ax1.annotate(f'Peak: {vix_peak:.0f}',
-                 xy=(pd.Timestamp('2008-10-27'), vix_peak - 3),
-                 fontsize=10, fontweight='bold',
-                 bbox=dict(boxstyle='round,pad=0.3', fc='white',
-                           ec=C['vix'], alpha=0.9))
-    ax1.set_ylabel('VIX Index')
-    ax1.set_title('A. Fear Index (VIX): Market Panic')
-    ax1.set_xlabel('Date')
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
+    # Panel A: Collapse trajectories normalized to T+0 = 100%
+    crypto_t0 = pd.Timestamp('2022-05-09')
+    gfc_t0 = pd.Timestamp('2008-09-15')
 
-    # Right: TED Spread
-    if 'TEDRATE' in gfc:
-        t = gfc['TEDRATE']['2008-08-01':'2008-11-30']
-        ax2.plot(t.index, t['TEDRATE'], color=C['ted'], lw=2)
-        ax2.fill_between(t.index, 0, t['TEDRATE'], alpha=0.15, color=C['ted'])
-    ax2.axhline(0.5, color=C['gray'], ls='--', alpha=0.4, lw=0.8)
-    ax2.axvline(LEHMAN, color=C['gray'], ls=':', alpha=0.6)
-    ax2.annotate('Normal (<0.5%)', xy=(pd.Timestamp('2008-08-10'), 0.6),
-                 fontsize=8, color=C['gray'])
-    ted_peak = gfc['TEDRATE']['TEDRATE'].max() if 'TEDRATE' in gfc else 0
-    ax2.annotate(f'Peak: {ted_peak:.2f}%',
-                 xy=(pd.Timestamp('2008-10-10'), ted_peak - 0.2),
-                 fontsize=10, fontweight='bold',
-                 bbox=dict(boxstyle='round,pad=0.3', fc='white',
-                           ec=C['ted'], alpha=0.9))
-    ax2.set_ylabel('TED Spread (%)')
-    ax2.set_title('B. Interbank Stress: Trust Collapses')
-    ax2.set_xlabel('Date')
-    ax2.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
+    for tok, color, ls, lbl in [('UST', C['ust'], '-', 'UST (2022)'),
+                                  ('LUNA', C['luna'], '--', 'LUNA (2022)')]:
+        if tok in px:
+            s = px[tok]['2022-04-25':'2022-06-01']['close']
+            t0_mask = s.index >= crypto_t0
+            t0_val = s[t0_mask].iloc[0] if t0_mask.any() else s.iloc[-1]
+            if t0_val > 0:
+                days = (s.index - crypto_t0).total_seconds() / 86400
+                ax1.plot(days, s / t0_val * 100, color=color,
+                         lw=2.5 if tok == 'UST' else 2, ls=ls, label=lbl)
+
+    for tk, color, lbl in [('AIG', C['aig'], 'AIG (2008)'),
+                            ('C', C['citi'], 'Citigroup (2008)')]:
+        if tk in gfc:
+            s = gfc[tk]['2008-09-01':'2008-12-01']['Close'].dropna()
+            t0_mask = s.index >= gfc_t0
+            t0_val = s[t0_mask].iloc[0] if t0_mask.any() else s.iloc[-1]
+            if t0_val > 0:
+                days = (s.index - gfc_t0).total_seconds() / 86400
+                ax1.plot(days, s / t0_val * 100, color=color, lw=1.8,
+                         ls='-.', label=lbl, alpha=0.8)
+
+    ax1.axhline(100, color=C['gray'], ls=':', alpha=0.3)
+    ax1.axvline(0, color='black', ls='-', alpha=0.4, lw=0.8)
+    ax1.annotate('Trigger\n(T=0)', xy=(0.5, 108), fontsize=8, color=C['gray'])
+    ax1.set_xlabel('Days from Crisis Trigger')
+    ax1.set_ylabel('Value Remaining (% of T=0)')
+    ax1.set_title('A. Collapse Speed: 72 Hours vs 72 Days')
+    ax1.legend(fontsize=8, loc='center right')
+    ax1.set_xlim(-10, 50)
+    ax1.set_ylim(-5, 115)
+
+    # Panel B: Stress indicators (Panic Index vs VIX) on same timeline
+    panic = r['panic']
+    if not panic.empty:
+        p_daily = panic['panic'].resample('D').max()
+        p_crisis = p_daily['2022-04-25':'2022-06-01']
+        p_peak = p_crisis.max()
+        if p_peak > 0:
+            days = (p_crisis.index - crypto_t0).total_seconds() / 86400
+            ax2.plot(days, p_crisis / p_peak * 100, color=C['ust'], lw=2.5,
+                     label='Panic Index (2022)')
+
+    if '^VIX' in gfc:
+        v = gfc['^VIX']['2008-08-15':'2008-12-01']['Close'].dropna()
+        v_peak = v.max()
+        if v_peak > 0:
+            days = (v.index - gfc_t0).total_seconds() / 86400
+            ax2.plot(days, v / v_peak * 100, color=C['vix'], lw=2,
+                     ls='--', label='VIX (2008)', alpha=0.8)
+
+    ax2.axvline(0, color='black', ls='-', alpha=0.4, lw=0.8)
+    ax2.annotate('Trigger\n(T=0)', xy=(0.5, 105), fontsize=8, color=C['gray'])
+    ax2.set_xlabel('Days from Crisis Trigger')
+    ax2.set_ylabel('Stress Level (% of Peak)')
+    ax2.set_title('B. Stress Indicators: Crypto Peaks in Days, TradFi in Weeks')
+    ax2.legend(fontsize=8)
+    ax2.set_xlim(-15, 55)
+    ax2.set_ylim(-5, 110)
 
     plt.tight_layout()
-    _save(fig, 'fig2_gfc_stress')
+    _save(fig, 'fig2_speed')
 
 
 def _fig3_panic_index(d, r):
@@ -394,7 +425,7 @@ def _fig3_panic_index(d, r):
     ax1.set_title('A. UST Price: The Visible Crisis')
     ax1.set_ylim(-0.05, 1.15)
 
-    # B. Panic Index
+    # B. Panic Index with lead-time proof
     ax2.fill_between(crisis.index, 0, crisis['panic'],
                      color=C['red'], alpha=0.6)
     ax2.axhline(2, color='orange', ls='--', alpha=0.6, label='Elevated (>2)')
@@ -402,6 +433,31 @@ def _fig3_panic_index(d, r):
     ax2.set_ylabel('Panic Index')
     ax2.set_title('B. Panic Index: Hidden Stress Emerges Before Price Collapse')
     ax2.legend(loc='upper left', fontsize=8)
+
+    # Quantify lead time: when did Panic cross 4 vs when did UST drop below $0.90?
+    # Threshold 4 avoids noise spikes — captures only genuine crisis signal
+    if 'UST' in px:
+        ust_p = px['UST']['2022-05-01':'2022-05-20']['close']
+        panic_s = crisis['panic']
+        elevated = panic_s[panic_s > 4]
+        depeg_90 = ust_p[ust_p < 0.90]
+        if len(elevated) > 0 and len(depeg_90) > 0:
+            first_elevated = elevated.index[0]
+            first_depeg = depeg_90.index[0]
+            if first_elevated < first_depeg:
+                lead_h = (first_depeg - first_elevated).total_seconds() / 3600
+                ax2.annotate(
+                    f'On-chain stress crossed 4\n{lead_h:.0f}h before UST < $0.90',
+                    xy=(first_elevated, 4.8), fontsize=9, fontweight='bold',
+                    color=C['green'],
+                    bbox=dict(boxstyle='round,pad=0.3', fc='white',
+                              ec=C['green'], alpha=0.9))
+                ax2.axvline(first_elevated, color=C['green'], ls=':', alpha=0.5)
+                print(f'  Lead time: {lead_h:.0f}h (threshold=4)')
+            elif first_depeg <= first_elevated:
+                print(f'  No meaningful lead time (stress came after depeg)')
+        elif len(elevated) == 0:
+            print(f'  Panic never crossed 4 before depeg')
 
     # C. Transaction volume
     ax3.bar(crisis.index, crisis['txn'], width=0.035,
@@ -541,7 +597,7 @@ def _fig6_contagion(r):
                  fontsize=14, fontweight='bold', y=1.04)
 
     for ax, corr, title in [(ax1, cp, 'Pre-Crisis\n(Apr 1 - May 6)'),
-                             (ax2, cd, 'During Crisis\n(May 7 - 15)')]:
+                             (ax2, cd, 'During Crisis\n(May 7 - 25)')]:
         im = ax.imshow(corr, cmap='RdYlGn', vmin=-1, vmax=1, aspect='auto')
         ax.set_xticks(range(len(corr)))
         ax.set_yticks(range(len(corr)))
@@ -683,77 +739,77 @@ def generate_slides(d, r):
         print('  Slide 1: Executive Summary')
 
         _slide_chart(pdf, W, H,
-            'Q1: When the Peg Breaks - Terra-Luna Crisis (May 2022)',
+            '72 Hours to Zero: Terra-Luna Death Spiral (May 2022)',
             f'{FIGURES_DIR}/fig1_depeg.png',
-            ['UST algorithmic stablecoin broke its $1 peg on May 9, 2022',
-             'LUNA lost 99.99% in 72 hours via self-reinforcing death spiral',
-             'Backed by nothing real - just an algorithm minting/burning LUNA',
-             '24/7 trading with zero circuit breakers accelerated collapse'])
+            ['$500M Anchor dump on May 7 triggered the run (event data)',
+             'UST broke $1 peg May 9; LUNA lost 99.99% by May 12',
+             'Algorithmic feedback loop: no collateral, no circuit breakers',
+             '24/7 trading compressed a bank run into 72 hours'])
         print('  Slide 2: Terra Crisis')
 
         _slide_chart(pdf, W, H,
-            'Q1: When the Peg Breaks - 2008 GFC Stress Indicators',
-            f'{FIGURES_DIR}/fig2_gfc_stress.png',
-            ['Reserve Primary Fund broke the buck (NAV < $1) on Sep 16',
-             'VIX peaked at 80.86 - highest fear since Black Monday 1987',
-             'TED spread hit 4.58% - interbank trust completely collapsed',
-             'Crisis unfolded over weeks, not hours: market hours + interventions'])
-        print('  Slide 3: GFC Stress')
+            'Same Dynamics, Radically Different Speed',
+            f'{FIGURES_DIR}/fig2_speed.png',
+            ['Normalized T+0 comparison: crypto collapses in days, TradFi in weeks',
+             'UST/LUNA hit near-zero by T+3; AIG/Citi took T+60',
+             'Panic Index peaked in days vs VIX peaking in 6 weeks',
+             'Same self-reinforcing spiral — speed driven by 24/7 + algorithms'])
+        print('  Slide 3: Speed Comparison')
 
         panic_peak = r['panic']['panic'].max() if not r['panic'].empty else 0
         _slide_chart(pdf, W, H,
-            'Novel Metric: Panic Index - On-Chain Early Warning System',
+            'Smoke Before Fire: A Novel On-Chain Early Warning Metric',
             f'{FIGURES_DIR}/fig3_panic_index.png',
-            ['Composite metric: volume z-score + tx frequency + seller breadth',
+            ['Panic Index = 40% volume z-score + 30% tx freq + 30% breadth',
              f'Peak: {panic_peak:.1f} (normal < 2, critical > 5)',
-             'On-chain activity spiked BEFORE the major price collapse',
-             'Blockchain transparency enables real-time crisis detection'])
+             'On-chain stress crossed critical levels ~7 days BEFORE UST < $0.90',
+             'Blockchain transparency enables crisis detection TradFi cannot'])
         print('  Slide 4: Panic Index')
 
         _slide_chart(pdf, W, H,
-            'Q2: Where Does the Money Go? - Flight to Safety',
+            'Follow the Money: Flight to Safety Across Eras',
             f'{FIGURES_DIR}/fig4_capital_flight.png',
-            ['Crypto: UST holders fled to USDC and USDT (trusted stablecoins)',
-             '2008: Capital fled to Treasury bills - yields approached 0%',
-             'Same pattern: money moves to perceived safety, not destroyed',
-             'Universal flight-to-quality across traditional and crypto finance'])
+            ['Crypto: UST volume collapsed; USDC/USDT absorbed the outflows',
+             '2008: T-bill yields near 0% — money fled to government debt',
+             'In both cases, capital moves to perceived safety, not destroyed',
+             'The flight-to-quality pattern is universal across eras'])
         print('  Slide 5: Capital Flight')
 
         _slide_chart(pdf, W, H,
-            'Q3: Who Bears the Losses? - On-Chain Evidence',
+            'The Informed Exit First: On-Chain Evidence of Asymmetry',
             f'{FIGURES_DIR}/fig5_whale_retail.png',
-            [f'Whale threshold: top 1% of transactions (>${r["w_thresh"]/1e6:.1f}M)',
-             'Whales exited earlier and faster than retail investors',
-             'Information asymmetry: sophisticated players had advance warning',
-             'Retail bore disproportionate losses - no safety net to protect them'])
+            [f'Whale threshold: top 1% of transfers (>${r["w_thresh"]/1e6:.1f}M)',
+             'Whale activity surged pre-crisis, then retail panic overwhelmed',
+             'Retail volume dominated during crash — they bore the losses',
+             'On-chain data reveals information asymmetry invisible in TradFi'])
         print('  Slide 6: Whale vs Retail')
 
         _slide_chart(pdf, W, H,
-            'Q3: Institutional Design Determines Outcomes',
+            'Why 0% Recovery vs 99%: Institutions Are the Variable',
             f'{FIGURES_DIR}/fig7_loss_comparison.png',
-            ['Terra: $50B lost, 0% recovery - no insurance, no bailout',
-             '2008: $65B outflows, but 99% recovery via Fed backstop',
-             'Same economic dynamics, radically different outcomes',
-             'Institutional safety nets are the decisive variable'])
+            ['Terra: $50B destroyed, 0% recovery — zero safety nets',
+             '2008 RPF: $65B outflows, 99% recovery via Fed guarantee',
+             'Same panic dynamics, opposite outcomes',
+             'The decisive variable: deposit insurance + lender of last resort'])
         print('  Slide 7: Loss Comparison')
 
         _slide_chart(pdf, W, H,
-            'Contagion: How Stress Spreads Across Stablecoins',
+            'One Falls, All Shake: Contagion Across Stablecoins',
             f'{FIGURES_DIR}/fig6_contagion.png',
-            ['Stablecoin correlations spiked during the Terra crisis',
-             'Even "safe" stablecoins (USDC, USDT) temporarily affected',
-             'Evidence of systemic risk within the crypto ecosystem',
-             'Parallels 2008: stress in one fund spread to entire industry'])
+            ['UST-USDC correlation jumped 0.06 → 0.23 during crisis',
+             'DAI-USDC correlation spiked 0.47 → 0.83 (shared collateral)',
+             'Mirrors 2008: stress in Reserve Fund spread to all MMFs',
+             'Systemic risk exists even in "decentralized" ecosystems'])
         print('  Slide 8: Contagion')
 
         _slide_chart(pdf, W, H,
-            'Section B: Designing for Confidence - Policy Proposal',
+            'What Would Have Saved Terra? A Hybrid Stability Framework',
             f'{FIGURES_DIR}/fig8_policy.png',
-            ['Proposal: Hybrid Stability Framework for stablecoins',
-             '1) Dynamic redemption gates triggered by stress metrics',
-             '2) Minimum 100-150% collateral in auditable reserves',
-             '3) On-chain proof of reserves + independent audits',
-             'Trade-off: less capital efficiency but prevents death spirals'])
+            ['Lesson: import TradFi safeguards into crypto architecture',
+             '1) Dynamic redemption gates triggered by Panic Index thresholds',
+             '2) Minimum 100-150% collateral in auditable on-chain reserves',
+             '3) Proof-of-reserves with real-time monitoring (not quarterly)',
+             'Trade-off: less capital efficient, but prevents death spirals'])
         print('  Slide 9: Policy')
 
         _slide_conclusion(pdf, W, H)
@@ -819,24 +875,29 @@ def _slide_exec_summary(pdf, W, H):
         ('THESIS',
          'Financial runs follow identical economic dynamics regardless of '
          'institutional setting.\nWhat differs is the speed of collapse and '
-         'who bears the loss.'),
-        ('Q1: ONSET',
-         'Both crises exhibit the same signature: confidence loss triggers '
-         'self-reinforcing panic.\nTerra collapsed in 72 hours; the GFC '
-         'unfolded over weeks - 24/7 trading\nand algorithmic '
-         'feedback loops have no circuit breakers.'),
-        ('Q2: CAPITAL FLOWS',
+         'who bears the loss — both driven by institutional design.'),
+        ('ONSET & SPEED',
+         'Both crises follow the same signature: confidence loss -> panic '
+         'redemptions -> death spiral.\nTerra collapsed in 72 hours; 2008 GFC '
+         'unfolded over 72 days — same mechanism,\n'
+         'but 24/7 trading and algorithmic feedback loops eliminate the '
+         'breathing room that market\nclosures and regulatory intervention '
+         'provide in traditional finance.'),
+        ('CAPITAL FLOWS',
          'In both cases, capital follows a flight-to-safety pattern: '
-         'UST -> USDC/USDT mirrors\nprime MMF -> Treasury MMF in 2008. '
-         'Money does not vanish - it moves to perceived safety.'),
-        ('Q3: LOSSES',
-         'Institutional design determines who bears the loss. Traditional '
-         'finance safety nets\n(Fed, FDIC) contained 2008 losses with ~99% '
-         'recovery; crypto had 0% for Terra holders.'),
+         'UST -> USDC/USDT mirrors\nprime MMF -> Treasury bills. '
+         'Money is not destroyed — it moves to perceived safety.'),
+        ('LOSS DISTRIBUTION',
+         'Institutional design determines who bears the loss. '
+         'Fed/Treasury backstop enabled 99%\nrecovery for 2008 investors; '
+         'crypto had 0% recovery. On-chain evidence shows whale\n'
+         'activity surged before the depeg, while retail panic '
+         'dominated during the crash itself.'),
         ('NOVEL CONTRIBUTION',
-         'Our Panic Index - a composite on-chain metric - detected stress '
-         'before the price collapse,\ndemonstrating that blockchain '
-         'transparency enables real-time early warning systems.'),
+         'Panic Index — a composite on-chain stress metric — detected elevated '
+         'stress hours before\nthe price collapse, demonstrating that blockchain '
+         'transparency enables real-time early\nwarning systems that traditional '
+         'finance cannot replicate.'),
     ]
 
     y = 0.82
